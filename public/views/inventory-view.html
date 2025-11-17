@@ -1,0 +1,81 @@
+<section class="page">
+  <h2 class="page-title">Existencias por sucursal</h2>
+  <p class="page-subtitle">
+    Consulta las existencias de productos en cada sucursal.
+  </p>
+
+  <!-- Filtros -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <form id="stock-filter-form">
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 0.75rem;
+          align-items: flex-end;
+        "
+      >
+        <div>
+          <label style="font-size: 0.85rem;">Buscar producto</label><br />
+          <input
+            type="text"
+            id="stock-filter-search"
+            placeholder="Nombre o descripción"
+            class="input"
+          />
+        </div>
+
+        <div>
+          <label style="font-size: 0.85rem;">Sucursal</label><br />
+          <select id="stock-filter-sucursal" class="input">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div>
+          <button type="submit" class="btn btn-primary">Aplicar filtros</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card">
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+      "
+    >
+      <h3 style="margin: 0;">Existencias</h3>
+      <span
+        id="stock-count"
+        style="font-size: 0.85rem; color: var(--text-muted);"
+      >
+        0 registros
+      </span>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Sucursal</th>
+            <th>Existencia</th>
+          </tr>
+        </thead>
+        <tbody id="stock-table-body">
+          <!-- JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <p
+      id="stock-message"
+      style="font-size: 0.85rem; margin-top: 0.75rem; color: var(--text-muted);"
+    ></p>
+  </div>
+</section>

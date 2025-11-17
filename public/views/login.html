@@ -1,0 +1,52 @@
+<section>
+  <h1 class="page-title">Bienvenido a Paints System</h1>
+  <p class="page-subtitle">
+    Backend en Node (MVC) + frontend HTML/JS, con tema turquesa.
+  </p>
+
+  <div class="card-grid">
+    <div class="card">
+      <h3 style="margin-top: 0;">Estado de la API</h3>
+      <p id="api-status">Consultando API...</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top: 0;">Descripción</h3>
+      <p>
+        Este sistema soporta múltiples roles:
+        <strong>Admin, Cajero, Digitador y Comprador</strong>.
+        Cada uno verá un dashboard distinto y opciones diferentes.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section style="margin-top: 1.5rem;">
+  <div class="card" style="max-width: 380px;">
+    <h3 style="margin-top: 0;">Iniciar sesión</h3>
+    <form id="login-form">
+      <div style="margin-bottom: 0.5rem;">
+        <label>Usuario</label><br />
+        <input
+          type="text"
+          id="login-username"
+          autocomplete="username"
+          class="input"
+        />
+      </div>
+      <div style="margin-bottom: 0.7rem;">
+        <label>Contraseña</label><br />
+        <input
+          type="password"
+          id="login-password"
+          autocomplete="current-password"
+          class="input"
+        />
+      </div>
+      <button type="submit" class="btn btn-primary">Entrar</button>
+      <p
+        id="login-message"
+        style="font-size: 0.85rem; margin-top: 0.6rem;"
+      ></p>
+    </form>
+  </div>
+</section>

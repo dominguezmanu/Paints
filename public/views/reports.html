@@ -1,0 +1,116 @@
+<section class="page">
+  <h2 class="page-title">Reportes de ventas</h2>
+  <p class="page-subtitle">
+    Analíticas básicas de facturación por rango de fechas.
+  </p>
+
+  <!-- Filtros -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <form id="reports-filter-form">
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 0.75rem;
+          align-items: flex-end;
+        "
+      >
+        <div>
+          <label style="font-size: 0.85rem;">Desde</label><br />
+          <input type="date" id="reports-from" class="input" />
+        </div>
+        <div>
+          <label style="font-size: 0.85rem;">Hasta</label><br />
+          <input type="date" id="reports-to" class="input" />
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary">Aplicar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Resumen -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <h3 style="margin-top: 0;">Resumen de ventas</h3>
+    <div class="card-grid">
+      <div class="summary-card">
+        <div class="summary-label">Total facturado</div>
+        <div id="rep-total-facturado" class="summary-value">Q 0.00</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Subtotal</div>
+        <div id="rep-subtotal" class="summary-value">Q 0.00</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Descuento total</div>
+        <div id="rep-descuento" class="summary-value">Q 0.00</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label"># Facturas</div>
+        <div id="rep-facturas" class="summary-value">0</div>
+        <div id="rep-promedio" class="summary-sub">
+          Promedio: Q 0.00
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top productos -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      "
+    >
+      <h3 style="margin: 0;">Top productos vendidos</h3>
+      <span
+        id="rep-top-count"
+        style="font-size: 0.85rem; color: var(--text-muted);"
+      >
+        0 productos
+      </span>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Unidades</th>
+            <th>Total vendido</th>
+          </tr>
+        </thead>
+        <tbody id="rep-top-body">
+          <!-- JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Ventas por día -->
+  <div class="card">
+    <h3 style="margin-top: 0;">Ventas por día</h3>
+    <div style="overflow-x: auto;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Facturas</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="rep-days-body">
+          <!-- JS -->
+        </tbody>
+      </table>
+    </div>
+    <p
+      id="rep-message"
+      style="font-size: 0.85rem; margin-top: 0.75rem; color: var(--text-muted);"
+    ></p>
+  </div>
+</section>

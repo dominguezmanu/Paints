@@ -1,0 +1,173 @@
+<section style="margin-top: 1.5rem;">
+  <h2 class="page-title">Ingresos de mercadería</h2>
+  <p class="page-subtitle">
+    Registra movimientos de entrada de productos al inventario por sucursal.
+  </p>
+
+  <!-- Formulario de movimiento -->
+  <div class="card">
+    <h3 style="margin-top: 0;">Nuevo movimiento de inventario</h3>
+
+    <form id="inventory-form">
+      <!-- Datos generales -->
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 0.75rem;
+        "
+      >
+        <div>
+          <label for="inv-sucursal" class="label">Sucursal</label>
+          <select id="inv-sucursal" class="input">
+            <option value="">Seleccione sucursal</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="inv-tipo-movimiento" class="label">Tipo de movimiento</label>
+          <select id="inv-tipo-movimiento" class="input">
+            <option value="">Seleccione tipo</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="inv-proveedor" class="label">Proveedor (opcional)</label>
+          <select id="inv-proveedor" class="input">
+            <option value="">Sin proveedor</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="inv-fecha" class="label">Fecha</label>
+          <input
+            id="inv-fecha"
+            type="date"
+            class="input"
+          />
+        </div>
+      </div>
+
+      <div style="margin-top: 0.75rem;">
+        <label for="inv-comentario" class="label">Comentario / referencia</label>
+        <input
+          id="inv-comentario"
+          type="text"
+          class="input"
+          placeholder="Ej: Ingreso por compra, factura 1234..."
+        />
+      </div>
+
+      <!-- Detalle de productos -->
+      <div style="margin-top: 1.25rem;">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+          "
+        >
+          <h4 style="margin: 0;">Productos</h4>
+          <button
+            type="button"
+            id="inv-add-item"
+            class="btn btn-primary"
+          >
+            + Agregar producto
+          </button>
+        </div>
+
+        <div
+          style="
+            margin-top: 0.75rem;
+            overflow-x: auto;
+            overflow-y: visible;
+            min-height: 220px;
+            padding-bottom: 0.5rem;
+            position: relative;
+          "
+        >
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="min-width: 220px;">Producto (ID o nombre)</th>
+                <th style="min-width: 80px;">Cantidad</th>
+                <th style="min-width: 120px;">Costo unitario</th>
+                <th style="min-width: 120px;">Subtotal</th>
+                <th style="min-width: 80px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="inv-items-body">
+              <!-- inventory.js inyecta -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Totales -->
+      <div
+        style="
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 1rem;
+          margin-top: 1.2rem;
+        "
+      >
+        <div>
+          <p style="margin: 0.2rem 0; font-weight: bold;">
+            Total movimiento: Q <span id="inv-total-general">0.00</span>
+          </p>
+        </div>
+        <div style="text-align: right;">
+          <p
+            id="inv-message"
+            style="
+              margin: 0 0 0.5rem 0;
+              font-size: 0.9rem;
+              color: #64748b;
+            "
+          ></p>
+          <button type="submit" class="btn btn-primary">
+            Registrar movimiento
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Movimientos recientes -->
+  <div class="card" style="margin-top: 1.25rem;">
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+      "
+    >
+      <h3 style="margin: 0;">Movimientos recientes</h3>
+    </div>
+
+    <div style="margin-top: 0.75rem; overflow-x: auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Fecha</th>
+            <th>Sucursal</th>
+            <th>Tipo</th>
+            <th>Proveedor</th>
+            <th>Total</th>
+            <th>Usuario</th>
+          </tr>
+        </thead>
+        <tbody id="inv-movements-body">
+          <!-- inventory.js inyecta -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

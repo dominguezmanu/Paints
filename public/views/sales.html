@@ -1,0 +1,309 @@
+<section style="margin-top: 1.5rem;">
+  <h2 class="page-title">Facturación / Ventas</h2>
+  <p class="page-subtitle">
+    Crea facturas seleccionando cliente, sucursal y productos. El sistema
+    calculará los totales automáticamente, validará pagos y permitirá
+    registrar clientes por NIT.
+  </p>
+
+  <!-- Crear factura -->
+  <div class="card">
+    <h3 style="margin-top: 0;">Crear factura</h3>
+
+    <form id="sales-form">
+      <!-- DATOS GENERALES (CLIENTE + SUCURSAL) -->
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 0.75rem;
+        "
+      >
+        <!-- Cliente -->
+        <div style="grid-column: 1 / -1;">
+          <label class="label">Cliente</label>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+              gap: 0.5rem;
+              align-items: flex-end;
+            "
+          >
+            <div>
+              <label for="sales-cliente-nit" class="label">NIT</label>
+              <div
+                style="
+                  display: flex;
+                  gap: 0.4rem;
+                  align-items: center;
+                "
+              >
+                <input
+                  id="sales-cliente-nit"
+                  type="text"
+                  class="input"
+                  placeholder="Ej: 1234567-8"
+                  autocomplete="off"
+                />
+                <button
+                  type="button"
+                  id="sales-cliente-search"
+                  class="btn btn-secondary"
+                >
+                  Buscar
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label for="sales-cliente-nombres" class="label">Nombres</label>
+              <input
+                id="sales-cliente-nombres"
+                type="text"
+                class="input"
+                placeholder="Nombres del cliente"
+              />
+            </div>
+
+            <div>
+              <label for="sales-cliente-apellidos" class="label">Apellidos</label>
+              <input
+                id="sales-cliente-apellidos"
+                type="text"
+                class="input"
+                placeholder="Apellidos del cliente"
+              />
+            </div>
+          </div>
+
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              gap: 0.5rem;
+              margin-top: 0.4rem;
+            "
+          >
+            <div>
+              <label for="sales-cliente-correo" class="label">Correo (opcional)</label>
+              <input
+                id="sales-cliente-correo"
+                type="email"
+                class="input"
+                placeholder="correo@ejemplo.com"
+              />
+            </div>
+            <div>
+              <label for="sales-cliente-direccion" class="label">Dirección (opcional)</label>
+              <input
+                id="sales-cliente-direccion"
+                type="text"
+                class="input"
+                placeholder="Dirección del cliente"
+              />
+            </div>
+          </div>
+
+          <input type="hidden" id="sales-cliente-id" />
+          <p
+            style="margin-top: 0.3rem; font-size: 0.8rem; color: #64748b;"
+          >
+            Si el NIT ya existe, se cargará el cliente. Si no existe, se
+            creará un nuevo registro con los datos ingresados.
+          </p>
+        </div>
+
+        <!-- Sucursal -->
+        <div>
+          <label for="sales-sucursal" class="label">Sucursal</label>
+          <select id="sales-sucursal" class="input">
+            <option value="">Seleccione sucursal</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="sales-correlativo" class="label">Correlativo</label>
+          <input
+            id="sales-correlativo"
+            type="text"
+            class="input"
+            placeholder="Ej: 000123"
+          />
+        </div>
+
+        <div>
+          <label for="sales-serie" class="label">Serie</label>
+          <input
+            id="sales-serie"
+            type="text"
+            class="input"
+            placeholder="Ej: A"
+          />
+        </div>
+      </div>
+
+      <!-- Productos -->
+      <div style="margin-top: 1.25rem;">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+          "
+        >
+          <h4 style="margin: 0;">Productos</h4>
+          <button
+            type="button"
+            id="sales-add-item"
+            class="btn btn-primary"
+          >
+            + Agregar producto
+          </button>
+        </div>
+
+        <div
+          style="
+            margin-top: 0.75rem;
+            overflow-x: auto;
+            overflow-y: visible;
+            min-height: 260px;
+            padding-bottom: 0.5rem;
+            position: relative;
+          "
+        >
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="min-width: 220px;">Producto (ID o nombre)</th>
+                <th style="min-width: 80px;">Cantidad</th>
+                <th style="min-width: 120px;">Precio unitario</th>
+                <th style="min-width: 120px;">Descuento</th>
+                <th style="min-width: 120px;">Subtotal</th>
+                <th style="min-width: 80px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="sales-items-body">
+              <!-- sales.js inyecta -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagos -->
+      <div style="margin-top: 1.5rem;">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+          "
+        >
+          <h4 style="margin: 0;">Pagos</h4>
+          <button
+            type="button"
+            id="sales-add-payment"
+            class="btn btn-primary"
+          >
+            + Agregar pago
+          </button>
+        </div>
+
+        <div style="margin-top: 0.75rem; overflow-x: auto;">
+          <table class="table table-small">
+            <thead>
+              <tr>
+                <th style="min-width: 150px;">Tipo de pago</th>
+                <th style="min-width: 120px;">Monto</th>
+                <th style="min-width: 160px;">Referencia (opcional)</th>
+                <th style="min-width: 80px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="sales-payments-body">
+              <!-- sales.js inyecta -->
+            </tbody>
+          </table>
+        </div>
+
+        <p
+          id="sales-payments-summary"
+          style="margin-top: 0.4rem; font-size: 0.85rem; color: #64748b;"
+        >
+          Total pagado: Q <span id="sales-total-pagos">0.00</span> ·
+          Diferencia: Q <span id="sales-diferencia">0.00</span>
+        </p>
+      </div>
+
+      <!-- Totales -->
+      <div
+        style="
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 1rem;
+          margin-top: 1.2rem;
+        "
+      >
+        <div>
+          <p style="margin: 0.2rem 0;">
+            Subtotal bruto: Q <span id="sales-subtotal-general">0.00</span>
+          </p>
+          <p style="margin: 0.2rem 0;">
+            Total descuento: Q <span id="sales-descuento-general">0.00</span>
+          </p>
+          <p style="margin: 0.2rem 0; font-weight: bold;">
+            Total factura: Q <span id="sales-total-general">0.00</span>
+          </p>
+        </div>
+        <div style="text-align: right;">
+          <p
+            id="sales-message"
+            style="
+              margin: 0 0 0.5rem 0;
+              font-size: 0.9rem;
+              color: #64748b;
+            "
+          ></p>
+          <button type="submit" class="btn btn-primary">
+            Crear factura
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Facturas recientes -->
+  <div class="card" style="margin-top: 1.25rem;">
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+      "
+    >
+      <h3 style="margin: 0;">Facturas recientes</h3>
+    </div>
+
+    <div style="margin-top: 0.75rem; overflow-x: auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Sucursal</th>
+            <th>Total</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="sales-invoices-body">
+          <!-- sales.js inyecta -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

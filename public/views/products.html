@@ -1,0 +1,95 @@
+<section style="margin-top: 1.5rem;">
+  <h2 class="page-title">Productos</h2>
+  <p class="page-subtitle">
+    Consulta del catálogo de productos. Todos los usuarios autenticados
+    pueden ver esta lista.
+  </p>
+
+  <div class="card" style="margin-bottom: 1rem;">
+    <form id="products-filter-form">
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 0.75rem;
+          align-items: flex-end;
+        "
+      >
+        <div>
+          <label style="font-size: 0.85rem;">Buscar</label><br />
+          <input
+            type="text"
+            id="filter-search"
+            placeholder="Nombre o descripción"
+            class="input"
+          />
+        </div>
+
+        <div>
+          <label style="font-size: 0.85rem;">Categoría</label><br />
+          <select id="filter-categoria" class="input">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 0.85rem;">Marca</label><br />
+          <select id="filter-marca" class="input">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div>
+          <button type="submit" class="btn btn-primary">
+            Aplicar filtros
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+      "
+    >
+      <h3 style="margin: 0;">Listado de productos</h3>
+      <span
+        id="products-count"
+        style="font-size: 0.85rem; color: var(--text-muted);"
+      >
+        0 productos
+      </span>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Marca</th>
+            <th>Categoría</th>
+            <th>Color</th>
+            <th>Medida</th>
+            <th>Precio menor</th>
+            <th>Precio mayor</th>
+            <th>Desc. %</th>
+          </tr>
+        </thead>
+        <tbody id="products-table-body">
+          <!-- products.js inyecta filas -->
+        </tbody>
+      </table>
+    </div>
+
+    <p
+      id="products-message"
+      style="font-size: 0.85rem; margin-top: 0.75rem; color: var(--text-muted);"
+    ></p>
+  </div>
+</section>
