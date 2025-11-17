@@ -184,6 +184,7 @@
       showElement("menu-home-guest");
       showElement("menu-login-guest");
       hideElement("menu-reports-user");  
+      hideElement("menu-quotes-user");  
 
       // Menú usuario
       hideElement("menu-dashboard-user");
@@ -223,26 +224,34 @@
     // Menús extra por rol
     switch (roleLower) {
       case "admin":
+        showElement("menu-dashboard-user");
+        showElement("menu-products-user");
         showElement("menu-sales-user");
         showElement("menu-inventory-user");
-        showElement("menu-stock-user"); 
+        showElement("menu-stock-user");
         showElement("menu-reports-user");
-        break;
-      case "digitador":
-        showElement("menu-inventory-user");
-        showElement("menu-stock-user"); 
+        showElement("menu-quotes-user"); // si quieres que admin también vea cotizaciones
         break;
       case "cajero":
+        showElement("menu-dashboard-user");
+        showElement("menu-products-user");
         showElement("menu-sales-user");
-        showElement("menu-stock-user"); 
+        break;
+      case "digitador":
+        showElement("menu-dashboard-user");
+        showElement("menu-products-user");
+        showElement("menu-inventory-user");
+        showElement("menu-stock-user");
         break;
       case "comprador":
-        // vistas futuras para comprador
+        showElement("menu-dashboard-user");
+        showElement("menu-products-user");
+        showElement("menu-quotes-user"); // 👈 aquí seguro
         break;
       default:
-        // rol genérico
         break;
     }
+
   }
 
   // ---------------------- CARGA DE VISTAS ----------------------
@@ -467,6 +476,15 @@
           loadView("reports.html");
         }
         break;
+      
+      case "#cotizaciones":
+        if (window.Quotes && typeof Quotes.initQuotesView === "function") {
+          loadView("quotes.html", Quotes.initQuotesView);
+        } else {
+          loadView("quotes.html");
+        }
+        break;
+
 
       default:
         if (user && getToken()) {

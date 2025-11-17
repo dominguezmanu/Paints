@@ -1,0 +1,148 @@
+<section class="page">
+  <h2 class="page-title">Cotizaciones</h2>
+  <p class="page-subtitle">
+    Módulo para compradores: arma un carrito, genera y guarda una cotización.
+  </p>
+
+  <!-- Datos del cliente -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <h3 style="margin-top: 0;">Datos del cliente</h3>
+    <div
+      style="
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.75rem;
+      "
+    >
+      <div>
+        <label style="font-size: 0.85rem;">NIT</label><br />
+        <input id="q-nit" class="input" placeholder="CF o NIT del cliente" />
+      </div>
+      <div>
+        <label style="font-size: 0.85rem;">Nombre</label><br />
+        <input
+          id="q-nombre"
+          class="input"
+          placeholder="Nombre del cliente"
+        />
+      </div>
+      <div>
+        <label style="font-size: 0.85rem;">Dirección</label><br />
+        <input
+          id="q-direccion"
+          class="input"
+          placeholder="Dirección (opcional)"
+        />
+      </div>
+      <div>
+        <label style="font-size: 0.85rem;">Correo</label><br />
+        <input
+          id="q-correo"
+          class="input"
+          placeholder="Correo (opcional)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Buscador de productos -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <h3 style="margin-top: 0;">Agregar productos</h3>
+    <div style="position: relative; max-width: 480px;">
+      <input
+        id="q-search-product"
+        class="input"
+        placeholder="Buscar por nombre o ID de producto"
+        autocomplete="off"
+      />
+      <div
+        id="q-search-results"
+        class="dropdown-list"
+        style="
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 100%;
+          z-index: 20;
+        "
+      >
+        <!-- JS inyecta resultados -->
+      </div>
+    </div>
+    <p
+      style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;"
+    >
+      Escribe al menos 2 caracteres para ver sugerencias. Haz clic en un
+      producto para agregarlo al carrito.
+    </p>
+  </div>
+
+  <!-- Carrito -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      "
+    >
+      <h3 style="margin: 0;">Carrito</h3>
+      <span
+        id="q-cart-summary"
+        style="font-size: 0.85rem; color: var(--text-muted);"
+      >
+        0 ítems · Q 0.00
+      </span>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Precio</th>
+            <th style="width: 120px;">Cantidad</th>
+            <th>Subtotal</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="q-cart-body">
+          <tr>
+            <td colspan="5" style="text-align: center; font-size: 0.9rem;">
+              No hay productos en el carrito.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="text-align: right; margin-top: 0.75rem;">
+      <span style="font-weight: 600; margin-right: 0.5rem;">Total:</span>
+      <span id="q-cart-total" style="font-weight: 700;">Q 0.00</span>
+    </div>
+  </div>
+
+  <!-- Guardar cotización -->
+  <div class="card">
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      "
+    >
+      <div>
+        <p
+          id="q-message"
+          style="font-size: 0.85rem; color: var(--text-muted); margin: 0;"
+        ></p>
+      </div>
+      <div>
+        <button id="q-btn-save" class="btn btn-primary">
+          Guardar cotización
+        </button>
+      </div>
+    </div>
+  </div>
+</section>

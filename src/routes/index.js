@@ -477,4 +477,162 @@ router.get('/reportes/ventas/por-dia', async (req, res) => {
   }
 });
 
+// ================== COTIZACIONES (Comprador) ==================
+// POST /api/cotizaciones
+// body: { nit?, nombre?, direccion?, correo?, cliente_id?, items:[{ producto_id, cantidad, precio_unitario? }] }
+
+router.post('/cotizaciones', async (req, res) => {
+  const {
+    nit,
+    nombre,
+    direccion,
+    correo,
+    cliente_id,
+    items,
+  } = req.body || {};
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({
+      ok: false,
+      error: 'La cotización debe tener al menos un ítem.',
+    });
+  }
+
+  try {
+    // 1) Resolver cliente_id
+    let clienteId = cliente_id || null;
+
+    if (!clienteId && nit) {
+      // Buscar por NIT
+      const [rows] = await pool.query(
+        'SELECT id FROM cliente WHERE nit = ? LIMIT 1',
+        [nit]
+      );
+      if (rows.length) {
+        clienteId = rows[0].id;
+      }
+    }
+
+    if (!clienteId) {
+      // Crear cliente rápido
+      const nombreBase = (nombre || 'Cliente cotización').trim();
+      const partes = nombreBase.split(' ');
+      const nombres = partes[0] || nombreBase;
+      const apellidos = partes.slice(1).join(' ') || '-';
+
+      const [ins] = await pool.query(
+        `INSERT INTO cliente (nombres, apellidos, correo, direccion, nit)
+         VALUES (?,?,?,?,?)`,
+        [nombres, apellidos, correo || null, direccion || null, nit || null]
+      );
+      clienteId = ins.insertId;
+    }
+
+    // 2) Crear cabecera de cotización
+    const [cotIns] = await pool.query(
+      `INSERT INTO cotizacion (cliente_id, fecha)
+       VALUES (?, NOW())`,
+      [clienteId]
+    );
+
+    const cotizacionId = cotIns.insertId;
+
+    // 3) Insertar detalle
+    let total = 0;
+
+    for (const item of items) {
+      const productoId = Number(item.producto_id || 0);
+      const cantidad = Number(item.cantidad || 0);
+      let precioUnit = item.precio_unitario != null
+        ? Number(item.precio_unitario)
+        : null;
+
+      if (!productoId || cantidad <= 0) continue;
+
+      // Si no viene precio, usamos el precio_mayor del producto
+      if (precioUnit == null || isNaN(precioUnit)) {
+        const [pRows] = await pool.query(
+          'SELECT precio_mayor FROM producto WHERE id = ? LIMIT 1',
+          [productoId]
+        );
+        if (!pRows.length) continue;
+        precioUnit = Number(pRows[0].precio_mayor || 0);
+      }
+
+      const subtotal = cantidad * precioUnit;
+      total += subtotal;
+
+      await pool.query(
+        `INSERT INTO detalle_cotizacion
+         (cotizacion_id, producto_id, cantidad, precio_unitario, subtotal)
+         VALUES (?,?,?,?,?)`,
+        [cotizacionId, productoId, cantidad, precioUnit, subtotal]
+      );
+    }
+
+    res.json({
+      ok: true,
+      data: {
+        cotizacion_id: cotizacionId,
+        cliente_id: clienteId,
+        total,
+      },
+    });
+  } catch (err) {
+    console.error('Error guardando cotización:', err);
+    res.status(500).json({
+      ok: false,
+      error: err.message,
+    });
+  }
+});
+
+// GET /api/cotizaciones?cliente_id=&nit=&limit=
+router.get('/cotizaciones', async (req, res) => {
+  const { cliente_id, nit } = req.query;
+  const limit = Number(req.query.limit || 10) || 10;
+
+  try {
+    let sql = `
+      SELECT
+        c.id,
+        c.fecha,
+        cli.nombres,
+        cli.apellidos,
+        cli.nit,
+        (SELECT COALESCE(SUM(dc.subtotal),0)
+           FROM detalle_cotizacion dc
+          WHERE dc.cotizacion_id = c.id) AS total
+      FROM cotizacion c
+      INNER JOIN cliente cli ON cli.id = c.cliente_id
+      WHERE 1 = 1
+    `;
+    const params = [];
+
+    if (cliente_id) {
+      sql += ' AND c.cliente_id = ?';
+      params.push(cliente_id);
+    }
+
+    if (nit) {
+      sql += ' AND cli.nit = ?';
+      params.push(nit);
+    }
+
+    sql += ' ORDER BY c.fecha DESC, c.id DESC LIMIT ?';
+    params.push(limit);
+
+    const [rows] = await pool.query(sql, params);
+
+    res.json({ ok: true, data: rows });
+  } catch (err) {
+    console.error('Error listando cotizaciones:', err);
+    res.status(500).json({
+      ok: false,
+      error: err.message,
+    });
+  }
+});
+
+
 module.exports = router;
