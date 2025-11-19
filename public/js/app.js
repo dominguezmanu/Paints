@@ -1,4 +1,3 @@
-// public/js/app.js
 (function () {
   const TOKEN_KEY = "paints_token";
   const USER_KEY = "paints_user";
@@ -133,6 +132,41 @@
       // Puede venir vacío
     }
 
+    App.downloadPdf = async function (url, fileName) {
+      try {
+        const token = localStorage.getItem("token");
+
+        const headers = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(url, { headers });
+
+        if (!res.ok) {
+          console.error("Error descargando PDF:", res.status);
+          alert("No se pudo descargar el PDF de la cotización.");
+          return;
+        }
+
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.target = "_blank";
+        a.download = fileName || "cotizacion.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        URL.revokeObjectURL(blobUrl);
+      } catch (err) {
+        console.error("Error en downloadPdf:", err);
+        alert("Error al descargar el PDF.");
+      }
+    };
+
     return {
       ok: response.ok,
       status: response.status,
@@ -185,6 +219,7 @@
       showElement("menu-login-guest");
       hideElement("menu-reports-user");  
       hideElement("menu-quotes-user");  
+      hideElement("menu-quotes-history-user");
 
       // Menú usuario
       hideElement("menu-dashboard-user");
@@ -231,6 +266,7 @@
         showElement("menu-stock-user");
         showElement("menu-reports-user");
         showElement("menu-quotes-user"); // si quieres que admin también vea cotizaciones
+        showElement("menu-quotes-history-user"); 
         break;
       case "cajero":
         showElement("menu-dashboard-user");
@@ -247,6 +283,7 @@
         showElement("menu-dashboard-user");
         showElement("menu-products-user");
         showElement("menu-quotes-user"); // 👈 aquí seguro
+        
         break;
       default:
         break;
@@ -482,6 +519,17 @@
           loadView("quotes.html", Quotes.initQuotesView);
         } else {
           loadView("quotes.html");
+        }
+        break;
+      
+      case "#cotizaciones-historial":
+        if (
+          window.QuotesHistory &&
+          typeof QuotesHistory.initQuotesHistoryView === "function"
+        ) {
+          loadView("quotes-history.html", QuotesHistory.initQuotesHistoryView);
+        } else {
+          loadView("quotes-history.html");
         }
         break;
 

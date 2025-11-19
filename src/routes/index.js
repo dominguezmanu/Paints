@@ -8,7 +8,7 @@ const InvoiceController = require("../controllers/InvoiceController");
 const ClientController = require("../controllers/ClientController");
 const { authRequired, requireRole } = require("../middlewares/authMiddleware");
 const pool = require('../config/db'); // o '../config/db', lo que ya tengas
-
+const PDFDocument = require('pdfkit'); //para archivos pdf
 const router = express.Router();
 
 // Estado
@@ -633,6 +633,233 @@ router.get('/cotizaciones', async (req, res) => {
     });
   }
 });
+// Helper para obtener una cotización completa (cabecera + items)
+async function getCotizacionCompleta(cotizacionId) {
+  // Cabecera + cliente
+  const [cabRows] = await pool.query(
+    `
+    SELECT
+      c.id,
+      c.fecha,
+      cli.id          AS cliente_id,
+      cli.nombres,
+      cli.apellidos,
+      cli.nit,
+      cli.direccion,
+      cli.correo
+    FROM cotizacion c
+    INNER JOIN cliente cli ON cli.id = c.cliente_id
+    WHERE c.id = ?
+    LIMIT 1
+    `,
+    [cotizacionId]
+  );
+
+  if (!cabRows.length) return null;
+  const cabecera = cabRows[0];
+
+  // Detalle + productos
+  const [detRows] = await pool.query(
+    `
+    SELECT
+      dc.id,
+      dc.producto_id,
+      p.nombre       AS producto_nombre,
+      dc.cantidad,
+      dc.precio_unitario,
+      dc.subtotal
+    FROM detalle_cotizacion dc
+    INNER JOIN producto p ON p.id = dc.producto_id
+    WHERE dc.cotizacion_id = ?
+    ORDER BY dc.id
+    `,
+    [cotizacionId]
+  );
+
+  // Total
+  let total = 0;
+  detRows.forEach((r) => {
+    total += Number(r.subtotal || 0);
+  });
+
+  return {
+    cabecera: {
+      ...cabecera,
+      total,
+    },
+    items: detRows,
+  };
+}
+
+// GET /api/cotizaciones/:id  → cotización completa en JSON
+router.get(
+  '/cotizaciones/:id', async (req, res) => {
+    const id = Number(req.params.id || 0);
+    if (!id) {
+      return res.status(400).json({ ok: false, error: 'ID inválido' });
+    }
+
+    try {
+      const data = await getCotizacionCompleta(id);
+      if (!data) {
+        return res
+          .status(404)
+          .json({ ok: false, error: 'Cotización no encontrada' });
+      }
+
+      res.json({ ok: true, data });
+    } catch (err) {
+      console.error('Error obteniendo cotización completa:', err);
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  });
+
+
+// GET /api/cotizaciones/:id/pdf  → genera PDF de la cotización
+router.get(
+  '/cotizaciones/:id/pdf', async (req, res) => {
+    const id = Number(req.params.id || 0);
+    if (!id) {
+      return res.status(400).json({ ok: false, error: 'ID inválido' });
+    }
+
+    try {
+      const data = await getCotizacionCompleta(id);
+      if (!data) {
+        return res
+          .status(404)
+          .json({ ok: false, error: 'Cotización no encontrada' });
+      }
+
+      const { cabecera, items } = data;
+
+      // Configurar headers de respuesta
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename="cotizacion-${id}.pdf"`
+      );
+
+      const doc = new PDFDocument({ margin: 40 });
+
+      doc.pipe(res);
+
+      // ===== Encabezado =====
+      doc
+        .fontSize(18)
+        .text('Paints System', { align: 'left' })
+        .moveDown(0.3);
+      doc
+        .fontSize(14)
+        .text(`Cotización #${cabecera.id}`, { align: 'left' })
+        .moveDown(0.5);
+
+      // Fecha
+      const fechaStr = cabecera.fecha
+        ? new Date(cabecera.fecha).toLocaleString()
+        : '';
+      doc.fontSize(10).text(`Fecha: ${fechaStr}`);
+
+      doc.moveDown(0.7);
+
+      // ===== Datos del cliente =====
+      const nombreCompleto = `${cabecera.nombres || ''} ${
+        cabecera.apellidos || ''
+      }`.trim();
+
+      doc.fontSize(11).text('Cliente:', { underline: true });
+      doc.moveDown(0.3);
+      doc
+        .fontSize(10)
+        .text(`Nombre: ${nombreCompleto || '-'}`)
+        .text(`NIT: ${cabecera.nit || 'CF'}`)
+        .text(`Dirección: ${cabecera.direccion || '-'}`)
+        .text(`Correo: ${cabecera.correo || '-'}`);
+
+      doc.moveDown(1);
+
+      // ===== Tabla de items =====
+      doc.fontSize(11).text('Detalle de cotización', { underline: true });
+      doc.moveDown(0.3);
+
+      const startX = doc.x;
+      let y = doc.y + 5;
+
+      // Cabecera de tabla
+      doc
+        .fontSize(10)
+        .text('Producto', startX, y, { width: 220 })
+        .text('Cant.', startX + 230, y, { width: 40, align: 'right' })
+        .text('Precio', startX + 280, y, { width: 70, align: 'right' })
+        .text('Subtotal', startX + 360, y, { width: 80, align: 'right' });
+
+      y += 15;
+      doc.moveTo(startX, y).lineTo(startX + 440, y).stroke();
+      y += 5;
+
+      doc.fontSize(9);
+
+      items.forEach((it) => {
+        const subtotal = Number(it.subtotal || 0);
+        const precio = Number(it.precio_unitario || 0);
+
+        // Salto de página simple si nos acercamos al final
+        if (y > doc.page.height - 80) {
+          doc.addPage();
+          y = doc.y;
+        }
+
+        doc
+          .text(it.producto_nombre || '', startX, y, {
+            width: 220,
+          })
+          .text(it.cantidad, startX + 230, y, {
+            width: 40,
+            align: 'right',
+          })
+          .text(precio.toFixed(2), startX + 280, y, {
+            width: 70,
+            align: 'right',
+          })
+          .text(subtotal.toFixed(2), startX + 360, y, {
+            width: 80,
+            align: 'right',
+          });
+
+        y += 14;
+      });
+
+      // ===== Total =====
+      doc.moveDown(1);
+      doc
+        .fontSize(11)
+        .text(
+          `Total cotizado: Q ${Number(cabecera.total || 0).toFixed(2)}`,
+          { align: 'right' }
+        );
+
+      doc.moveDown(1);
+
+      doc
+        .fontSize(9)
+        .fillColor('gray')
+        .text(
+          'Esta es una cotización no fiscal. Precios y disponibilidad sujetos a cambio sin previo aviso.',
+          { align: 'left' }
+        );
+
+      doc.end();
+    } catch (err) {
+      console.error('Error generando PDF de cotización:', err);
+      if (!res.headersSent) {
+        res.status(500).json({
+          ok: false,
+          error: 'Error generando el PDF de la cotización.',
+        });
+      }
+    }
+  });
+
 
 
 module.exports = router;

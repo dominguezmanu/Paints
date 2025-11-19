@@ -1,0 +1,133 @@
+<section class="page">
+  <h2 class="page-title">Historial de cotizaciones</h2>
+  <p class="page-subtitle">
+    Consulta y revisión de cotizaciones realizadas. Solo visible para el rol de gerente (Admin).
+  </p>
+
+  <!-- Filtros -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <form id="qh-filter-form">
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 0.75rem;
+          align-items: flex-end;
+        "
+      >
+        <div>
+          <label style="font-size: 0.85rem;">NIT del cliente</label><br />
+          <input
+            id="qh-nit"
+            class="input"
+            placeholder="CF o NIT (opcional)"
+          />
+        </div>
+        <div>
+          <label style="font-size: 0.85rem;">Desde</label><br />
+          <input type="date" id="qh-from" class="input" />
+        </div>
+        <div>
+          <label style="font-size: 0.85rem;">Hasta</label><br />
+          <input type="date" id="qh-to" class="input" />
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary">
+            Aplicar filtros
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Lista de cotizaciones -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      "
+    >
+      <h3 style="margin: 0;">Cotizaciones recientes</h3>
+      <span
+        id="qh-count"
+        style="font-size: 0.85rem; color: var(--text-muted);"
+      >
+        0 registros
+      </span>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>NIT</th>
+            <th>Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="qh-table-body">
+          <tr>
+            <td colspan="6" style="text-align: center; font-size: 0.9rem;">
+              No hay cotizaciones para los filtros actuales.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Detalle de cotización seleccionada -->
+  <div class="card">
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      "
+    >
+      <h3 style="margin: 0;">Detalle de cotización</h3>
+      <button id="qh-btn-pdf" class="btn btn-secondary" disabled>
+        Descargar PDF
+      </button>
+    </div>
+
+    <p
+      id="qh-detail-header"
+      style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;"
+    >
+      Selecciona una cotización de la tabla superior para ver su detalle.
+    </p>
+
+    <div style="overflow-x: auto;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cant.</th>
+            <th>Precio</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody id="qh-detail-body">
+          <tr>
+            <td colspan="4" style="text-align: center; font-size: 0.9rem;">
+              Sin datos.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="text-align: right; margin-top: 0.75rem;">
+      <span style="font-weight: 600; margin-right: 0.5rem;">Total cotizado:</span>
+      <span id="qh-detail-total" style="font-weight: 700;">Q 0.00</span>
+    </div>
+  </div>
+</section>

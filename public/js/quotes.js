@@ -3,6 +3,7 @@
   const Quotes = {};
   let allProducts = [];
   let cart = [];
+  let lastCotizacionId = null;
 
   function setText(el, text) {
     if (!el) return;
@@ -186,74 +187,110 @@
   }
 
   async function saveQuote() {
-    const msgEl = document.getElementById("q-message");
-    setText(msgEl, "");
+  const msgEl = document.getElementById("q-message");
+  const btnPdf = document.getElementById("q-btn-pdf");
+  setText(msgEl, "");
+  if (btnPdf) {
+    btnPdf.disabled = true;
+  }
+  lastCotizacionId = null;
 
-    if (!cart.length) {
-      setText(msgEl, "El carrito está vacío.");
+  if (!cart.length) {
+    setText(msgEl, "El carrito está vacío.");
+    return;
+  }
+
+  const nit = document.getElementById("q-nit")?.value.trim() || null;
+  const nombre =
+    document.getElementById("q-nombre")?.value.trim() || null;
+  const direccion =
+    document.getElementById("q-direccion")?.value.trim() || null;
+  const correo =
+    document.getElementById("q-correo")?.value.trim() || null;
+
+  const payload = {
+    nit,
+    nombre,
+    direccion,
+    correo,
+    items: cart.map((i) => ({
+      producto_id: i.id,
+      cantidad: i.cantidad,
+      precio_unitario: i.precio_unitario,
+    })),
+  };
+
+  try {
+    setText(msgEl, "Guardando cotización...");
+    const res = await App.apiFetch("/api/cotizaciones", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    console.log("Quotes - guardar res:", res);
+
+    if (!res.ok) {
+      setText(
+        msgEl,
+        "No se pudo guardar la cotización: " + (res.error || "Error desconocido.")
+      );
       return;
     }
 
-    const nit = document.getElementById("q-nit")?.value.trim() || null;
-    const nombre =
-      document.getElementById("q-nombre")?.value.trim() || null;
-    const direccion =
-      document.getElementById("q-direccion")?.value.trim() || null;
-    const correo =
-      document.getElementById("q-correo")?.value.trim() || null;
-
-    const payload = {
-      nit,
-      nombre,
-      direccion,
-      correo,
-      items: cart.map((i) => ({
-        producto_id: i.id,
-        cantidad: i.cantidad,
-        precio_unitario: i.precio_unitario,
-      })),
-    };
-
-    try {
-      setText(msgEl, "Guardando cotización...");
-      const res = await App.apiFetch("/api/cotizaciones", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      console.log("Quotes - guardar res:", res);
-
-      if (!res.ok) {
-        setText(
-          msgEl,
-          "No se pudo guardar la cotización: " + (res.error || "Error desconocido.")
-        );
-        return;
-      }
-
-      const total = res.data?.total || 0;
-      setText(
-        msgEl,
-        `Cotización #${res.data.cotizacion_id} guardada correctamente. Total: ${formatMoney(
-          total
-        )}`
-      );
-
-      // Limpiar carrito
-      cart = [];
-      renderCart();
-    } catch (err) {
-      console.error("Error guardando cotización:", err);
-      setText(
-        msgEl,
-        "Error al guardar la cotización. Revisa la consola o la API."
-      );
+    // Desempaquetar la respuesta: puede venir como {ok, data:{...}}
+    let info = res.data;
+    if (info && typeof info === "object" && "data" in info) {
+      info = info.data;
     }
+
+    const id = info?.cotizacion_id;
+    const total = info?.total || 0;
+    lastCotizacionId = id;
+
+    setText(
+      msgEl,
+      `Cotización #${id} guardada correctamente. Total: ${formatMoney(
+        total
+      )}`
+    );
+
+    if (btnPdf && id) {
+      btnPdf.disabled = false;
+    }
+
+    // Limpiar carrito
+    cart = [];
+    renderCart();
+  } catch (err) {
+    console.error("Error guardando cotización:", err);
+    setText(
+      msgEl,
+      "Error al guardar la cotización. Revisa la consola o la API."
+    );
+  }
+}
+
+  function setupPdfButton() {
+    const btnPdf = document.getElementById("q-btn-pdf");
+    if (!btnPdf) return;
+
+    btnPdf.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (!lastCotizacionId) return;
+      const url = `/api/cotizaciones/${lastCotizacionId}/pdf`;
+      const fileName = `cotizacion-${lastCotizacionId}.pdf`;
+      if (window.App && typeof App.downloadPdf === "function") {
+        App.downloadPdf(url, fileName);
+      } else {
+        window.open(url, "_blank");
+      }
+    });
   }
 
   Quotes.initQuotesView = function () {
     cart = [];
+    lastCotizacionId = null;
     renderCart();
 
     loadProducts();
@@ -272,6 +309,8 @@
         saveQuote();
       });
     }
+
+    setupPdfButton();
   };
 
   window.Quotes = Quotes;
