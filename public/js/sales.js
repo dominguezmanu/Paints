@@ -15,7 +15,6 @@
   }
 
   // --------- BUSCAR PRODUCTOS POR API ---------
-
   function searchProducts(term) {
     const token = salesGetToken();
     if (!token) return Promise.resolve([]);
@@ -90,30 +89,40 @@
         const data = await res.json();
 
         if (data.ok && data.cliente) {
-          const c = data.cliente;
-          idInput.value = c.id;
-          if (nombresInput) nombresInput.value = c.nombres || "";
-          if (apellidosInput) apellidosInput.value = c.apellidos || "";
-          if (correoInput) correoInput.value = c.correo || "";
-          if (direccionInput) direccionInput.value = c.direccion || "";
-          if (msgEl) {
-            msgEl.textContent = "Cliente encontrado por NIT.";
-            msgEl.style.color = "#0b8457";
-          }
-        } else {
-          // No encontrado: preparar para nuevo cliente
-          idInput.value = "";
-          if (nombresInput) nombresInput.value = "";
-          if (apellidosInput) apellidosInput.value = "";
-          if (correoInput) correoInput.value = "";
-          if (direccionInput) direccionInput.value = "";
-          if (msgEl) {
-            msgEl.textContent =
-              "No se encontró cliente con ese NIT. Ingresa los datos para registrarlo.";
-            msgEl.style.color = "#64748b";
-          }
-          if (nombresInput) nombresInput.focus();
-        }
+  const c = data.cliente;
+  idInput.value = c.id;
+  if (nombresInput) nombresInput.value = c.nombres || "";
+  if (apellidosInput) apellidosInput.value = c.apellidos || "";
+  if (correoInput) correoInput.value = c.correo || "";
+  if (direccionInput) direccionInput.value = c.direccion || "";
+  if (msgEl) {
+    msgEl.textContent = "Cliente encontrado por NIT.";
+    msgEl.style.color = "#0b8457";
+  }
+
+  // 👇 NUEVO: calcular tienda más cercana para este cliente
+  updateNearestBranchForClient(c.id);
+} else {
+  // No encontrado: preparar para nuevo cliente
+  idInput.value = "";
+  if (nombresInput) nombresInput.value = "";
+  if (apellidosInput) apellidosInput.value = "";
+  if (correoInput) correoInput.value = "";
+  if (direccionInput) direccionInput.value = "";
+  if (msgEl) {
+    msgEl.textContent =
+      "No se encontró cliente con ese NIT. Ingresa los datos para registrarlo.";
+    msgEl.style.color = "#64748b";
+  }
+  if (nombresInput) nombresInput.focus();
+
+  // 👇 Para nuevos clientes todavía no hay GPS ni cálculo
+  const label = document.getElementById("sales-nearest-branch");
+  if (label) {
+    label.textContent = "No disponible (cliente nuevo)";
+  }
+}
+
       } catch (err) {
         console.error("Error buscando cliente por NIT:", err);
         if (msgEl) {
@@ -124,6 +133,7 @@
       }
     }
 
+    
     searchBtn.addEventListener("click", (e) => {
       e.preventDefault();
       buscarPorNit();
@@ -784,6 +794,49 @@
         });
     });
   }
+
+  // --- dentro de (function () { ... }) de sales.js ---
+
+async function updateNearestBranchForClient(clienteId) {
+  const label = document.getElementById('sales-nearest-branch');
+  if (!label || !clienteId) return;
+
+  label.textContent = 'Calculando...';
+
+  try {
+    const res = await App.apiFetch(
+      `/api/clientes/${clienteId}/nearest-branch`
+    );
+
+    console.log('Sales - nearest branch:', res);
+
+    if (!res.ok || !res.data || !res.data.ok) {
+      label.textContent = 'No disponible';
+      return;
+    }
+
+    const data = res.data.data || res.data;
+    const nearest =
+      data.nearestBranch || data.nearest || data; // por si ajustas el shape
+
+    if (!nearest || !nearest.nombre) {
+      label.textContent = 'No disponible';
+      return;
+    }
+
+    const km =
+      typeof nearest.distanceKm === 'number'
+        ? nearest.distanceKm.toFixed(2)
+        : '-';
+
+    label.textContent = `${nearest.nombre} (${
+      nearest.direccion || 'sin dirección'
+    }) · ${km} km`;
+  } catch (err) {
+    console.error('Error calculando tienda más cercana:', err);
+    label.textContent = 'No disponible';
+  }
+}
 
   // --------- INIT PÚBLICO ---------
 

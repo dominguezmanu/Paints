@@ -1486,4 +1486,149 @@ router.get(
 );
 
 
+// ----- Helpers GPS -----
+
+function parseGpsCoords(str) {
+  if (!str) return null;
+
+  // quitamos posibles paréntesis, espacios extra, etc.
+  const clean = String(str).trim().replace(/[()]/g, '');
+  let parts = clean.split(',');
+
+  if (parts.length !== 2) {
+    parts = clean.split(/\s+/);
+    if (parts.length !== 2) return null;
+  }
+
+  const lat = parseFloat(parts[0]);
+  const lng = parseFloat(parts[1]);
+
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+
+  return { lat, lng };
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371; // radio de la Tierra en km
+  const toRad = (deg) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+// ======================================================
+//  TIENDA MÁS CERCANA POR GPS (cliente -> sucursal)
+//  GET /api/clientes/:id/nearest-branch
+// ======================================================
+router.get('/clientes/:id/nearest-branch', async (req, res) => {
+  const id = Number(req.params.id || 0);
+  if (!id) {
+    return res.status(400).json({
+      ok: false,
+      message: 'ID de cliente inválido',
+    });
+  }
+
+  try {
+    // 1) Traer cliente con su ubicaciónGPS
+    const [clienteRows] = await pool.query(
+      `
+      SELECT id, nombres, apellidos, ubicacionGPS
+      FROM cliente
+      WHERE id = ?
+      `,
+      [id]
+    );
+
+    if (!clienteRows.length) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Cliente no encontrado',
+      });
+    }
+
+    const cliente = clienteRows[0];
+    const cliCoords = parseGpsCoords(cliente.ubicacionGPS);
+
+    if (!cliCoords) {
+      return res.status(400).json({
+        ok: false,
+        message:
+          'El cliente no tiene una ubicaciónGPS válida (formato esperado: lat,lon)',
+      });
+    }
+
+    // 2) Traer todas las sucursales con su ubicación
+    const [sucursalRows] = await pool.query(
+      `
+      SELECT id, nombre, direccion, ubicacionGPS
+      FROM sucursal
+      `
+    );
+
+    let best = null;
+
+    for (const s of sucursalRows) {
+      const sCoords = parseGpsCoords(s.ubicacionGPS);
+      if (!sCoords) continue; // sucursal sin coordenadas, se ignora
+
+      const distKm = haversineKm(
+        cliCoords.lat,
+        cliCoords.lng,
+        sCoords.lat,
+        sCoords.lng
+      );
+
+      if (!best || distKm < best.distanceKm) {
+        best = {
+          id: s.id,
+          nombre: s.nombre,
+          direccion: s.direccion,
+          ubicacionGPS: s.ubicacionGPS,
+          distanceKm: distKm,
+        };
+      }
+    }
+
+    if (!best) {
+      return res.status(400).json({
+        ok: false,
+        message:
+          'No hay sucursales con coordenadas GPS válidas para calcular distancia',
+      });
+    }
+
+    return res.json({
+      ok: true,
+      data: {
+        cliente: {
+          id: cliente.id,
+          nombres: cliente.nombres,
+          apellidos: cliente.apellidos,
+          ubicacionGPS: cliente.ubicacionGPS,
+        },
+        nearestBranch: best,
+      },
+    });
+  } catch (err) {
+    console.error('Error /clientes/:id/nearest-branch:', err);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al calcular la tienda más cercana',
+    });
+  }
+});
+
+
 module.exports = router;
