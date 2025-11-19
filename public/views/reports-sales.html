@@ -2,7 +2,7 @@
 <section>
   <h1 class="page-title">Reportes de ventas</h1>
   <p class="page-subtitle">
-    Analíticas básicas de facturación por rango de fechas.
+    Resumen de ventas y productos destacados en un rango de fechas.
   </p>
 
   <!-- Filtros -->
@@ -46,7 +46,7 @@
 
         <div>
           <button type="submit" class="btn btn-primary">
-            Aplicar
+            Generar reportes
           </button>
         </div>
       </div>
@@ -57,107 +57,43 @@
     </form>
   </div>
 
-  <!-- Resumen + desglose por tipo de pago -->
-  <div class="card" style="margin-bottom: 1rem;">
-    <h2 style="margin-top: 0;">Resumen de ventas</h2>
-
-    <div
-      style="
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1rem;
-      "
-    >
-      <div>
-        <div style="font-size: 0.85rem; color: var(--text-muted);">
-          Total facturado
-        </div>
-        <div
-          id="rep-total-facturado"
-          style="font-size: 1.1rem; font-weight: 600;"
-        >
-          Q 0.00
-        </div>
-      </div>
-
-      <div>
-        <div style="font-size: 0.85rem; color: var(--text-muted);">
-          Subtotal (sin descuento)
-        </div>
-        <div
-          id="rep-total-subtotal"
-          style="font-size: 1.1rem; font-weight: 600;"
-        >
-          Q 0.00
-        </div>
-      </div>
-
-      <div>
-        <div style="font-size: 0.85rem; color: var(--text-muted);">
-          Descuento total
-        </div>
-        <div
-          id="rep-total-descuento"
-          style="font-size: 1.1rem; font-weight: 600;"
-        >
-          Q 0.00
-        </div>
-      </div>
-
-      <div>
-        <div style="font-size: 0.85rem; color: var(--text-muted);">
-          # Facturas
-        </div>
-        <div
-          id="rep-total-facturas"
-          style="font-size: 1.1rem; font-weight: 600;"
-        >
-          0
-        </div>
-      </div>
-
-      <div>
-        <div style="font-size: 0.85rem; color: var(--text-muted);">
-          Promedio por factura
-        </div>
-        <div
-          id="rep-total-promedio"
-          style="font-size: 1.1rem; font-weight: 600;"
-        >
-          Q 0.00
-        </div>
-      </div>
-    </div>
-
-    <h4 style="margin-top: 0.5rem;">Desglose por tipo de pago</h4>
-    <div style="overflow-x: auto;">
-      <table class="table table-small">
-        <thead>
-          <tr>
-            <th>Tipo de pago</th>
-            <th>Monto</th>
-            <th>% sobre total</th>
-          </tr>
-        </thead>
-        <tbody id="rep-total-tbody">
-          <tr>
-            <td colspan="3" style="text-align: center; font-size: 0.9rem;">
-              Sin datos para el rango seleccionado.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Grid de top productos -->
+  <!-- Grid de reportes -->
   <div class="card-grid">
-    <!-- Top por dinero -->
+    <!-- Resumen general -->
+    <div class="card">
+      <h3 style="margin-top: 0;">Resumen de ventas</h3>
+      <p
+        id="rep-total-text"
+        style="font-size: 0.9rem; margin-bottom: 0.5rem;"
+      >
+        Total facturado: Q 0.00
+      </p>
+
+      <div style="overflow-x: auto;">
+        <table class="table table-small">
+          <thead>
+            <tr>
+              <th>Tipo de pago</th>
+              <th>Monto</th>
+              <th>% sobre total</th>
+            </tr>
+          </thead>
+          <tbody id="rep-total-tbody">
+            <tr>
+              <td colspan="3" style="text-align: center; font-size: 0.9rem;">
+                Sin datos para el rango seleccionado.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Top productos por monto -->
     <div class="card">
       <h3 style="margin-top: 0;">Top productos por dinero generado</h3>
       <p style="font-size: 0.85rem; color: var(--text-muted);">
-        Ordenados por monto total (Q) en el rango seleccionado.
+        Ordenado por monto total (Q) en el rango seleccionado.
       </p>
 
       <div style="overflow-x: auto;">
@@ -181,11 +117,11 @@
       </div>
     </div>
 
-    <!-- Top por cantidad -->
+    <!-- Top productos por cantidad -->
     <div class="card">
       <h3 style="margin-top: 0;">Top productos por unidades vendidas</h3>
       <p style="font-size: 0.85rem; color: var(--text-muted);">
-        Ordenados por cantidad total vendida en el rango seleccionado.
+        Ordenado por cantidad total vendida en el rango seleccionado.
       </p>
 
       <div style="overflow-x: auto;">

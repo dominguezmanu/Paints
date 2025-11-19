@@ -574,6 +574,7 @@
     window.addEventListener("hashchange", handleRouteChange);
   }
 
+  
   // ---------------------- INIT APP ----------------------
 
   function initApp() {

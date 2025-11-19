@@ -1220,4 +1220,177 @@ router.get(
     }
   });
 
+
+
+  // ================== HELPERS REPORTES ==================
+function getDateRange(query) {
+  let { from, to } = query || {};
+
+  const today = new Date();
+  // to por defecto = hoy
+  if (!to) {
+    to = today.toISOString().slice(0, 10); // YYYY-MM-DD
+  }
+
+  // from por defecto = 30 días antes de "to"
+  if (!from) {
+    const d = new Date(to);
+    d.setDate(d.getDate() - 29);
+    from = d.toISOString().slice(0, 10);
+  }
+
+  // Seguridad: formato simple YYYY-MM-DD
+  from = String(from).slice(0, 10);
+  to = String(to).slice(0, 10);
+
+  return { from, to };
+}
+
+
+// ================== REPORTES: VENTAS ==================
+
+// 1) Monto total facturado + desglose por tipo de pago
+// GET /api/reportes/ventas/total?from=YYYY-MM-DD&to=YYYY-MM-DD
+router.get(
+  '/reportes/ventas/total',
+  async (req, res) => {
+    const { from, to } = getDateRange(req.query);
+
+    try {
+      // Total general (solo facturas vigentes)
+      const [totRows] = await pool.query(
+        `
+        SELECT
+          IFNULL(SUM(f.total_factura), 0) AS total_facturado
+        FROM factura f
+        WHERE f.estado = 'vigente'
+          AND DATE(f.fecha) BETWEEN ? AND ?
+        `,
+        [from, to]
+      );
+
+      const total_facturado = totRows[0]?.total_facturado || 0;
+
+      // Desglose por tipo de pago
+      const [tipoRows] = await pool.query(
+        `
+        SELECT
+          tp.descripcion AS tipo,
+          IFNULL(SUM(pf.monto), 0) AS monto
+        FROM factura f
+        INNER JOIN pago_factura pf ON pf.factura_id = f.id
+        INNER JOIN tipo_pago tp     ON tp.id       = pf.tipo_pago_id
+        WHERE f.estado = 'vigente'
+          AND DATE(f.fecha) BETWEEN ? AND ?
+        GROUP BY tp.id, tp.descripcion
+        ORDER BY monto DESC
+        `,
+        [from, to]
+      );
+
+      res.json({
+        ok: true,
+        data: {
+          from,
+          to,
+          total_facturado,
+          por_tipo: tipoRows,
+        },
+      });
+    } catch (err) {
+      console.error('Error reporte ventas/total:', err);
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+);
+
+// 2) Productos que más DINERO generan
+// GET /api/reportes/ventas/top-productos-monto?from&to&limit=10
+router.get(
+  '/reportes/ventas/top-productos-monto',
+  async (req, res) => {
+    const { from, to } = getDateRange(req.query);
+    const limit = Number(req.query.limit || 10) || 10;
+
+    try {
+      const [rows] = await pool.query(
+        `
+        SELECT
+          p.id,
+          p.nombre AS producto,
+          IFNULL(SUM(df.subtotal), 0) AS total_monto,
+          IFNULL(SUM(df.cantidad), 0) AS total_unidades
+        FROM factura f
+        INNER JOIN detalle_factura df ON df.factura_id = f.id
+        INNER JOIN producto p         ON p.id          = df.producto_id
+        WHERE f.estado = 'vigente'
+          AND DATE(f.fecha) BETWEEN ? AND ?
+        GROUP BY p.id, p.nombre
+        ORDER BY total_monto DESC
+        LIMIT ?
+        `,
+        [from, to, limit]
+      );
+
+      res.json({
+        ok: true,
+        data: {
+          from,
+          to,
+          limit,
+          productos: rows,
+        },
+      });
+    } catch (err) {
+      console.error('Error reporte ventas/top-productos-monto:', err);
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+);
+
+// 3) Productos que más se venden (CANTIDAD)
+// GET /api/reportes/ventas/top-productos-cantidad?from&to&limit=10
+router.get(
+  '/reportes/ventas/top-productos-cantidad',
+  async (req, res) => {
+    const { from, to } = getDateRange(req.query);
+    const limit = Number(req.query.limit || 10) || 10;
+
+    try {
+      const [rows] = await pool.query(
+        `
+        SELECT
+          p.id,
+          p.nombre AS producto,
+          IFNULL(SUM(df.cantidad), 0) AS total_unidades,
+          IFNULL(SUM(df.subtotal), 0) AS total_monto
+        FROM factura f
+        INNER JOIN detalle_factura df ON df.factura_id = f.id
+        INNER JOIN producto p         ON p.id          = df.producto_id
+        WHERE f.estado = 'vigente'
+          AND DATE(f.fecha) BETWEEN ? AND ?
+        GROUP BY p.id, p.nombre
+        ORDER BY total_unidades DESC
+        LIMIT ?
+        `,
+        [from, to, limit]
+      );
+
+      res.json({
+        ok: true,
+        data: {
+          from,
+          to,
+          limit,
+          productos: rows,
+        },
+      });
+    } catch (err) {
+      console.error('Error reporte ventas/top-productos-cantidad:', err);
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+);
+
+
 module.exports = router;
