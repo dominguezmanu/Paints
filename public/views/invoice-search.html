@@ -1,0 +1,188 @@
+<section class="page">
+  <h2 class="page-title">Buscar factura</h2>
+  <p class="page-subtitle">
+    Consulta de facturas por número, NIT o rango de fechas. Solo disponible para
+    Admin y Cajero.
+  </p>
+
+  <!-- Filtros -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <form id="inv-filter-form">
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 0.75rem;
+          align-items: flex-end;
+        "
+      >
+        <div>
+          <label style="font-size: 0.85rem;">ID de factura</label><br />
+          <input
+            id="inv-id"
+            class="input"
+            placeholder="ID interno (opcional)"
+          />
+        </div>
+
+        <div>
+          <label style="font-size: 0.85rem;">Correlativo</label><br />
+          <input
+            id="inv-correlativo"
+            class="input"
+            placeholder="Número de factura (opcional)"
+          />
+        </div>
+
+        <div>
+          <label style="font-size: 0.85rem;">NIT del cliente</label><br />
+          <input
+            id="inv-nit"
+            class="input"
+            placeholder="CF o NIT (opcional)"
+          />
+        </div>
+
+        <div>
+          <label style="font-size: 0.85rem;">Desde</label><br />
+          <input type="date" id="inv-from" class="input" />
+        </div>
+
+        <div>
+          <label style="font-size: 0.85rem;">Hasta</label><br />
+          <input type="date" id="inv-to" class="input" />
+        </div>
+
+        <div>
+          <button type="submit" class="btn btn-primary">
+            Buscar
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Lista de facturas -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      "
+    >
+      <h3 style="margin: 0;">Resultados</h3>
+      <span
+        id="inv-count"
+        style="font-size: 0.85rem; color: var(--text-muted);"
+      >
+        0 facturas
+      </span>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Fecha</th>
+            <th>Correlativo</th>
+            <th>Cliente</th>
+            <th>NIT</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="inv-table-body">
+          <tr>
+            <td colspan="8" style="text-align: center; font-size: 0.9rem;">
+              No hay facturas para los filtros actuales.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Detalle de factura -->
+  <div class="card">
+    <h3 style="margin-top: 0;">Detalle de la factura</h3>
+
+    <button id="inv-btn-pdf" class="btn btn-secondary" disabled>
+        Descargar PDF
+      </button>
+
+    <p
+      id="inv-detail-header"
+      style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;"
+    >
+      Selecciona una factura de la tabla superior para ver su detalle.
+    </p>
+
+    <!-- Productos -->
+    <div style="overflow-x: auto; margin-bottom: 0.75rem;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cant.</th>
+            <th>Precio</th>
+            <th>Desc.</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody id="inv-detail-body">
+          <tr>
+            <td colspan="5" style="text-align: center; font-size: 0.9rem;">
+              Sin datos.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagos -->
+    <h4 style="margin-bottom: 0.5rem;">Pagos aplicados</h4>
+    <div style="overflow-x: auto; margin-bottom: 0.75rem;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>Tipo de pago</th>
+            <th>Monto</th>
+            <th>Referencia</th>
+          </tr>
+        </thead>
+        <tbody id="inv-payments-body">
+          <tr>
+            <td colspan="3" style="text-align: center; font-size: 0.9rem;">
+              Sin pagos registrados.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totales -->
+    <div
+      style="
+        display: flex;
+        justify-content: flex-end;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+      "
+    >
+      <div>
+        <div>Subtotal:</div>
+        <div>Descuento:</div>
+        <div><strong>Total factura:</strong></div>
+      </div>
+      <div style="text-align: right;">
+        <div id="inv-total-sub">Q 0.00</div>
+        <div id="inv-total-desc">Q 0.00</div>
+        <div id="inv-total-fact" style="font-weight: 700;">Q 0.00</div>
+      </div>
+    </div>
+  </div>
+</section>

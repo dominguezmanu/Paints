@@ -88,7 +88,7 @@ router.delete(
 router.get("/facturas", authRequired, InvoiceController.list);
 
 // Ver una factura específica
-router.get("/facturas/:id", authRequired, InvoiceController.getOne);
+//router.get("/facturas/:id", authRequired, InvoiceController.getOne);
 
 // Crear factura (solo Admin y Cajero)
 router.post(
@@ -691,6 +691,90 @@ async function getCotizacionCompleta(cotizacionId) {
   };
 }
 
+// ================== HELPERS FACTURA ==================
+async function getFacturaCompleta(facturaId) {
+  // Cabecera (factura + cliente + sucursal + usuario)
+  const [cabRows] = await pool.query(
+    `
+    SELECT
+      f.id,
+      f.fecha,
+      f.correlativo,
+      f.letra_serie,
+      f.subtotal,
+      f.total_descuento,
+      f.total_factura,
+      f.estado,
+      cli.id           AS cliente_id,
+      cli.nombres,
+      cli.apellidos,
+      cli.nit,
+      cli.direccion,
+      cli.correo,
+      suc.id           AS sucursal_id,
+      suc.nombre       AS sucursal_nombre,
+      suc.direccion    AS sucursal_direccion,
+      u.id             AS usuario_id,
+      u.username       AS usuario_username
+    FROM factura f
+    INNER JOIN cliente  cli ON cli.id  = f.cliente_id
+    INNER JOIN sucursal suc ON suc.id  = f.sucursal_id
+    INNER JOIN usuario  u   ON u.id    = f.usuario_id
+    WHERE f.id = ?
+    LIMIT 1
+    `,
+    [facturaId]
+  );
+
+  if (!cabRows.length) return null;
+  const cabecera = cabRows[0];
+
+  // Detalle (productos)
+  const [detRows] = await pool.query(
+    `
+    SELECT
+      df.id,
+      df.producto_id,
+      p.nombre        AS producto_nombre,
+      df.cantidad,
+      df.precio_unitario,
+      df.descuento_aplicado,
+      df.subtotal
+    FROM detalle_factura df
+    INNER JOIN producto p ON p.id = df.producto_id
+    WHERE df.factura_id = ?
+    ORDER BY df.id
+    `,
+    [facturaId]
+  );
+
+  // Pagos (desglose por tipo de pago)
+  const [pagosRows] = await pool.query(
+    `
+    SELECT
+      pf.id,
+      pf.monto,
+      pf.referencia,
+      pf.tipo_pago_id,
+      tp.descripcion  AS tipo_pago,
+      pf.tarjeta_id
+    FROM pago_factura pf
+    INNER JOIN tipo_pago tp ON tp.id = pf.tipo_pago_id
+    WHERE pf.factura_id = ?
+    ORDER BY pf.id
+    `,
+    [facturaId]
+  );
+
+  return {
+    cabecera,
+    items: detRows,
+    pagos: pagosRows,
+  };
+}
+
+
+
 // GET /api/cotizaciones/:id  → cotización completa en JSON
 router.get(
   '/cotizaciones/:id', async (req, res) => {
@@ -861,5 +945,279 @@ router.get(
   });
 
 
+// ================== FACTURAS - BUSQUEDA LISTA ==================
+// GET /api/facturas?id=&correlativo=&nit=&from=&to=&limit=
+router.get(
+  '/facturas', async (req, res) => {
+    const id           = Number(req.query.id || 0);
+    const correlativo  = (req.query.correlativo || '').trim();
+    const nit          = (req.query.nit || '').trim();
+    const from         = (req.query.from || '').trim();
+    const to           = (req.query.to || '').trim();
+    const limit        = Number(req.query.limit || 50) || 50;
+
+    try {
+      let sql = `
+        SELECT
+          f.id,
+          f.fecha,
+          f.correlativo,
+          f.letra_serie,
+          f.total_factura,
+          f.estado,
+          cli.nombres,
+          cli.apellidos,
+          cli.nit
+        FROM factura f
+        INNER JOIN cliente cli ON cli.id = f.cliente_id
+        WHERE 1 = 1
+      `;
+      const params = [];
+
+      // Si viene id de factura, priorizamos eso
+      if (id) {
+        sql += ' AND f.id = ?';
+        params.push(id);
+      }
+
+      if (correlativo) {
+        sql += ' AND f.correlativo = ?';
+        params.push(correlativo);
+      }
+
+      if (nit) {
+        sql += ' AND cli.nit = ?';
+        params.push(nit);
+      }
+
+      if (from) {
+        sql += ' AND DATE(f.fecha) >= ?';
+        params.push(from);
+      }
+      if (to) {
+        sql += ' AND DATE(f.fecha) <= ?';
+        params.push(to);
+      }
+
+      sql += ' ORDER BY f.fecha DESC, f.id DESC LIMIT ?';
+      params.push(limit);
+
+      const [rows] = await pool.query(sql, params);
+
+      res.json({ ok: true, data: rows });
+    } catch (err) {
+      console.error('Error listando facturas:', err);
+      res.status(500).json({
+        ok: false,
+        error: err.message,
+      });
+    }
+  });
+
+
+// ================== FACTURAS - DETALLE ==================
+
+// ================== FACTURAS - DETALLE ==================
+// RESPUESTA JSON: { ok:true, cabecera:{...}, items:[...], pagos:[...] }
+router.get(
+  '/facturas/:id', async (req, res) => {
+    const id = Number(req.params.id || 0);
+    if (!id) {
+      return res.status(400).json({ ok: false, error: 'ID inválido' });
+    }
+
+    try {
+      const data = await getFacturaCompleta(id);
+      if (!data) {
+        return res
+          .status(404)
+          .json({ ok: false, error: 'Factura no encontrada' });
+      }
+
+      // data tiene { cabecera, items, pagos }
+      res.json({
+        ok: true,
+        cabecera: data.cabecera,
+        items: data.items,
+        pagos: data.pagos,
+      });
+    } catch (err) {
+      console.error('Error obteniendo factura completa:', err);
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  });
+
+  // ================== FACTURA -> PDF ==================
+router.get(
+  '/facturas/:id/pdf', async (req, res) => {
+    const id = Number(req.params.id || 0);
+    if (!id) {
+      return res.status(400).json({ ok: false, error: 'ID inválido' });
+    }
+
+    try {
+      const data = await getFacturaCompleta(id);
+      if (!data) {
+        return res
+          .status(404)
+          .json({ ok: false, error: 'Factura no encontrada' });
+      }
+
+      const { cabecera, items, pagos } = data;
+
+      // Configurar headers HTTP
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename="factura-${id}.pdf"`
+      );
+
+      const doc = new PDFDocument({ margin: 40 });
+      doc.pipe(res);
+
+      // ===== Encabezado =====
+      doc.fontSize(18).text('Paints System', { align: 'left' }).moveDown(0.3);
+
+      const corTexto = cabecera.correlativo
+        ? `${cabecera.letra_serie || ''}-${cabecera.correlativo}`
+        : '(sin correlativo)';
+
+      doc
+        .fontSize(14)
+        .text(`Factura #${cabecera.id} · ${corTexto}`, { align: 'left' })
+        .moveDown(0.5);
+
+      const fechaStr = cabecera.fecha
+        ? new Date(cabecera.fecha).toLocaleString()
+        : '';
+      doc.fontSize(10).text(`Fecha: ${fechaStr}`).moveDown(0.7);
+
+      // ===== Cliente / sucursal =====
+      const nombreCli =
+        `${cabecera.nombres || ''} ${cabecera.apellidos || ''}`.trim();
+
+      doc.fontSize(11).text('Datos del cliente', { underline: true });
+      doc
+        .moveDown(0.3)
+        .fontSize(10)
+        .text(`Nombre: ${nombreCli || '-'}`)
+        .text(`NIT: ${cabecera.nit || 'CF'}`)
+        .text(`Dirección: ${cabecera.direccion || '-'}`)
+        .moveDown(0.5);
+
+      doc.fontSize(11).text('Sucursal', { underline: true });
+      doc
+        .moveDown(0.3)
+        .fontSize(10)
+        .text(`Nombre: ${cabecera.sucursal_nombre || '-'}`)
+        .text(`Dirección: ${cabecera.sucursal_direccion || '-'}`)
+        .moveDown(1);
+
+      // ===== Tabla de productos =====
+      doc.fontSize(11).text('Detalle de productos', { underline: true });
+      doc.moveDown(0.3);
+
+      const startX = doc.x;
+      let y = doc.y + 5;
+
+      doc
+        .fontSize(10)
+        .text('Producto', startX, y, { width: 220 })
+        .text('Cant.', startX + 230, y, { width: 40, align: 'right' })
+        .text('Precio', startX + 280, y, { width: 70, align: 'right' })
+        .text('Desc.', startX + 360, y, { width: 60, align: 'right' })
+        .text('Subtotal', startX + 430, y, { width: 80, align: 'right' });
+
+      y += 15;
+      doc.moveTo(startX, y).lineTo(startX + 510, y).stroke();
+      y += 5;
+      doc.fontSize(9);
+
+      items.forEach((it) => {
+        if (y > doc.page.height - 80) {
+          doc.addPage();
+          y = doc.y;
+        }
+
+        const precio = Number(it.precio_unitario || 0);
+        const desc = Number(it.descuento_aplicado || 0);
+        const sub = Number(it.subtotal || 0);
+
+        doc
+          .text(it.producto_nombre || '', startX, y, { width: 220 })
+          .text(it.cantidad, startX + 230, y, { width: 40, align: 'right' })
+          .text(precio.toFixed(2), startX + 280, y, {
+            width: 70,
+            align: 'right',
+          })
+          .text(desc.toFixed(2), startX + 360, y, {
+            width: 60,
+            align: 'right',
+          })
+          .text(sub.toFixed(2), startX + 430, y, {
+            width: 80,
+            align: 'right',
+          });
+
+        y += 14;
+      });
+
+      doc.moveDown(1);
+
+      // ===== Pagos =====
+      doc.fontSize(11).text('Pagos aplicados', { underline: true });
+      doc.moveDown(0.3);
+
+      if (!pagos || !pagos.length) {
+        doc.fontSize(9).text('Sin pagos registrados.').moveDown(0.5);
+      } else {
+        pagos.forEach((p) => {
+          doc
+            .fontSize(9)
+            .text(
+              `- ${p.tipo_pago || ''}: Q ${Number(p.monto || 0).toFixed(
+                2
+              )}  (Ref: ${p.referencia || '-'})`
+            );
+        });
+        doc.moveDown(0.5);
+      }
+
+      // ===== Totales =====
+      doc.moveDown(0.5);
+      doc
+        .fontSize(11)
+        .text(
+          `Subtotal: Q ${Number(cabecera.subtotal || 0).toFixed(2)}`,
+          { align: 'right' }
+        )
+        .text(
+          `Descuento: Q ${Number(cabecera.total_descuento || 0).toFixed(2)}`,
+          { align: 'right' }
+        )
+        .text(
+          `TOTAL: Q ${Number(cabecera.total_factura || 0).toFixed(2)}`,
+          { align: 'right' }
+        );
+
+      doc.moveDown(1);
+      doc
+        .fontSize(9)
+        .fillColor('gray')
+        .text(
+          'Documento generado por Paints System. Para efectos fiscales, utilice la factura oficial emitida por la empresa.',
+          { align: 'left' }
+        );
+
+      doc.end();
+    } catch (err) {
+      console.error('Error generando PDF de factura:', err);
+      if (!res.headersSent) {
+        res
+          .status(500)
+          .json({ ok: false, error: 'Error generando el PDF de la factura.' });
+      }
+    }
+  });
 
 module.exports = router;

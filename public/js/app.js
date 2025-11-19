@@ -220,6 +220,7 @@
       hideElement("menu-reports-user");  
       hideElement("menu-quotes-user");  
       hideElement("menu-quotes-history-user");
+      hideElement("menu-invoices-user"); 
 
       // Menú usuario
       hideElement("menu-dashboard-user");
@@ -267,11 +268,13 @@
         showElement("menu-reports-user");
         showElement("menu-quotes-user"); // si quieres que admin también vea cotizaciones
         showElement("menu-quotes-history-user"); 
+        showElement("menu-invoices-user");
         break;
       case "cajero":
         showElement("menu-dashboard-user");
         showElement("menu-products-user");
         showElement("menu-sales-user");
+        showElement("menu-invoices-user"); 
         break;
       case "digitador":
         showElement("menu-dashboard-user");
@@ -532,6 +535,17 @@
           loadView("quotes-history.html");
         }
         break;
+      case "#buscar-factura":
+        if (
+          window.InvoiceSearch &&
+          typeof InvoiceSearch.initInvoiceSearchView === "function"
+        ) {
+          loadView("invoice-search.html", InvoiceSearch.initInvoiceSearchView);
+        } else {
+          loadView("invoice-search.html");
+        }
+        break;
+
 
 
       default:
