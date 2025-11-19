@@ -1,5 +1,6 @@
 // src/controllers/InvoiceController.js
 const InvoiceModel = require("../models/InvoiceModel");
+const pool = require('../config/db'); 
 
 const InvoiceController = {
   async list(req, res) {

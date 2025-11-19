@@ -208,5 +208,61 @@
         </table>
       </div>
     </div>
+
+      <!-- Productos con menos ventas (por unidades) -->
+  <div class="card" style="margin-top: 1rem;">
+    <h3 style="margin-top: 0;">Productos con menos ventas</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted);">
+      Productos que registran menos unidades vendidas en el rango seleccionado.
+    </p>
+
+    <div style="overflow-x: auto;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Producto</th>
+            <th>Unidades vendidas</th>
+            <th>Monto total</th>
+          </tr>
+        </thead>
+        <tbody id="rep-low-sales-body">
+          <tr>
+            <td colspan="4" style="text-align: center; font-size: 0.9rem;">
+              Sin datos para el rango seleccionado.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Productos sin stock por sucursal -->
+  <div class="card" style="margin-top: 1rem;">
+    <h3 style="margin-top: 0;">Productos con poco o sin stock</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted);">
+      Productos cuya existencia actual en la sucursal es menor a 5 unidades.
+    </p>
+
+    <div style="overflow-x: auto;">
+      <table class="table table-small">
+        <thead>
+          <tr>
+            <th>Sucursal</th>
+            <th>Producto</th>
+            <th>Existencias</th>
+          </tr>
+        </thead>
+        <tbody id="rep-no-stock-body">
+          <tr>
+            <td colspan="3" style="text-align: center; font-size: 0.9rem;">
+              No se encontraron productos con stock bajo.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   </div>
 </section>

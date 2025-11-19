@@ -41,8 +41,10 @@
     const totalBody = document.getElementById("rep-total-tbody");
     const topMontoBody = document.getElementById("rep-top-monto-body");
     const topCantBody = document.getElementById("rep-top-cantidad-body");
+    const lowSalesBody = document.getElementById("rep-low-sales-body");
+    const noStockBody = document.getElementById("rep-no-stock-body");
 
-    // Limpieza inicial
+    // Placeholders "Cargando..."
     if (totalBody) {
       totalBody.innerHTML =
         '<tr><td colspan="3" style="text-align:center;font-size:0.9rem;">Cargando...</td></tr>';
@@ -55,13 +57,21 @@
       topCantBody.innerHTML =
         '<tr><td colspan="4" style="text-align:center;font-size:0.9rem;">Cargando...</td></tr>';
     }
+    if (lowSalesBody) {
+      lowSalesBody.innerHTML =
+        '<tr><td colspan="4" style="text-align:center;font-size:0.9rem;">Cargando...</td></tr>';
+    }
+    if (noStockBody) {
+      noStockBody.innerHTML =
+        '<tr><td colspan="3" style="text-align:center;font-size:0.9rem;">Cargando...</td></tr>';
+    }
 
     const params = new URLSearchParams();
     if (from) params.append("from", from);
     if (to) params.append("to", to);
 
     try {
-      // 1) Resumen total + tipo de pago
+      // 1) Resumen total + desglose por tipo de pago
       const totalRes = await App.apiFetch(
         "/api/reportes/ventas/total?" + params.toString()
       );
@@ -73,41 +83,36 @@
         ? totalData.por_tipo
         : [];
 
-      // Por ahora solo llenamos el "Total facturado"
       setTextById("rep-total-facturado", formatMoney(totalFact));
-      // Estos los dejaremos en 0 hasta que ampliemos el endpoint:
-      // rep-total-subtotal, rep-total-descuento, rep-total-facturas, rep-total-promedio
 
-      if (!totalBody) {
-        console.warn(
-          "No se encontró rep-total-tbody en el DOM, se omite tabla de tipos de pago."
-        );
-      } else if (!porTipo.length) {
-        totalBody.innerHTML =
-          '<tr><td colspan="3" style="text-align:center;font-size:0.9rem;">Sin datos para el rango seleccionado.</td></tr>';
-      } else {
-        totalBody.innerHTML = "";
-        porTipo.forEach((row) => {
-          const tr = document.createElement("tr");
+      if (totalBody) {
+        if (!porTipo.length) {
+          totalBody.innerHTML =
+            '<tr><td colspan="3" style="text-align:center;font-size:0.9rem;">Sin datos para el rango seleccionado.</td></tr>';
+        } else {
+          totalBody.innerHTML = "";
+          porTipo.forEach((row) => {
+            const tr = document.createElement("tr");
 
-          const tdTipo = document.createElement("td");
-          tdTipo.textContent = row.tipo || "";
+            const tdTipo = document.createElement("td");
+            tdTipo.textContent = row.tipo || "";
 
-          const tdMonto = document.createElement("td");
-          tdMonto.textContent = formatMoney(row.monto);
+            const tdMonto = document.createElement("td");
+            tdMonto.textContent = formatMoney(row.monto);
 
-          const tdPct = document.createElement("td");
-          const pct =
-            totalFact > 0
-              ? ((Number(row.monto || 0) * 100) / totalFact).toFixed(1)
-              : "0.0";
-          tdPct.textContent = pct + " %";
+            const tdPct = document.createElement("td");
+            const pct =
+              totalFact > 0
+                ? ((Number(row.monto || 0) * 100) / totalFact).toFixed(1)
+                : "0.0";
+            tdPct.textContent = pct + " %";
 
-          tr.appendChild(tdTipo);
-          tr.appendChild(tdMonto);
-          tr.appendChild(tdPct);
-          totalBody.appendChild(tr);
-        });
+            tr.appendChild(tdTipo);
+            tr.appendChild(tdMonto);
+            tr.appendChild(tdPct);
+            totalBody.appendChild(tr);
+          });
+        }
       }
 
       // 2) Top productos por dinero
@@ -123,34 +128,34 @@
         ? topMontoData.productos
         : [];
 
-      if (!topMontoBody) {
-        console.warn("No se encontró rep-top-monto-body en el DOM.");
-      } else if (!topMontoList.length) {
-        topMontoBody.innerHTML =
-          '<tr><td colspan="4" style="text-align:center;font-size:0.9rem;">Sin datos para el rango seleccionado.</td></tr>';
-      } else {
-        topMontoBody.innerHTML = "";
-        topMontoList.forEach((p, idx) => {
-          const tr = document.createElement("tr");
+      if (topMontoBody) {
+        if (!topMontoList.length) {
+          topMontoBody.innerHTML =
+            '<tr><td colspan="4" style="text-align:center;font-size:0.9rem;">Sin datos para el rango seleccionado.</td></tr>';
+        } else {
+          topMontoBody.innerHTML = "";
+          topMontoList.forEach((p, idx) => {
+            const tr = document.createElement("tr");
 
-          const tdRank = document.createElement("td");
-          tdRank.textContent = idx + 1;
+            const tdRank = document.createElement("td");
+            tdRank.textContent = idx + 1;
 
-          const tdProd = document.createElement("td");
-          tdProd.textContent = p.producto || "";
+            const tdProd = document.createElement("td");
+            tdProd.textContent = p.producto || "";
 
-          const tdUni = document.createElement("td");
-          tdUni.textContent = p.total_unidades || 0;
+            const tdUni = document.createElement("td");
+            tdUni.textContent = p.total_unidades || 0;
 
-          const tdTotal = document.createElement("td");
-          tdTotal.textContent = formatMoney(p.total_monto);
+            const tdTotal = document.createElement("td");
+            tdTotal.textContent = formatMoney(p.total_monto);
 
-          tr.appendChild(tdRank);
-          tr.appendChild(tdProd);
-          tr.appendChild(tdUni);
-          tr.appendChild(tdTotal);
-          topMontoBody.appendChild(tr);
-        });
+            tr.appendChild(tdRank);
+            tr.appendChild(tdProd);
+            tr.appendChild(tdUni);
+            tr.appendChild(tdTotal);
+            topMontoBody.appendChild(tr);
+          });
+        }
       }
 
       // 3) Top productos por cantidad
@@ -166,34 +171,114 @@
         ? topCantData.productos
         : [];
 
-      if (!topCantBody) {
-        console.warn("No se encontró rep-top-cantidad-body en el DOM.");
-      } else if (!topCantList.length) {
-        topCantBody.innerHTML =
-          '<tr><td colspan="4" style="text-align:center;font-size:0.9rem;">Sin datos para el rango seleccionado.</td></tr>';
-      } else {
-        topCantBody.innerHTML = "";
-        topCantList.forEach((p, idx) => {
-          const tr = document.createElement("tr");
+      if (topCantBody) {
+        if (!topCantList.length) {
+          topCantBody.innerHTML =
+            '<tr><td colspan="4" style="text-align:center;font-size:0.9rem;">Sin datos para el rango seleccionado.</td></tr>';
+        } else {
+          topCantBody.innerHTML = "";
+          topCantList.forEach((p, idx) => {
+            const tr = document.createElement("tr");
 
-          const tdRank = document.createElement("td");
-          tdRank.textContent = idx + 1;
+            const tdRank = document.createElement("td");
+            tdRank.textContent = idx + 1;
 
-          const tdProd = document.createElement("td");
-          tdProd.textContent = p.producto || "";
+            const tdProd = document.createElement("td");
+            tdProd.textContent = p.producto || "";
 
-          const tdUni = document.createElement("td");
-          tdUni.textContent = p.total_unidades || 0;
+            const tdUni = document.createElement("td");
+            tdUni.textContent = p.total_unidades || 0;
 
-          const tdTotal = document.createElement("td");
-          tdTotal.textContent = formatMoney(p.total_monto);
+            const tdTotal = document.createElement("td");
+            tdTotal.textContent = formatMoney(p.total_monto);
 
-          tr.appendChild(tdRank);
-          tr.appendChild(tdProd);
-          tr.appendChild(tdUni);
-          tr.appendChild(tdTotal);
-          topCantBody.appendChild(tr);
-        });
+            tr.appendChild(tdRank);
+            tr.appendChild(tdProd);
+            tr.appendChild(tdUni);
+            tr.appendChild(tdTotal);
+            topCantBody.appendChild(tr);
+          });
+        }
+      }
+
+      // 4) Productos con menos ventas (unidades)
+      const lowSalesRes = await App.apiFetch(
+        "/api/reportes/ventas/productos-menor-venta?" +
+          params.toString() +
+          "&limit=10"
+      );
+      console.log("ReportsSales - menos vendidos:", lowSalesRes);
+
+      const lowSalesData = lowSalesRes.data?.data || lowSalesRes.data || {};
+      const lowSalesList = Array.isArray(lowSalesData.productos)
+        ? lowSalesData.productos
+        : [];
+
+      if (lowSalesBody) {
+        if (!lowSalesList.length) {
+          lowSalesBody.innerHTML =
+            '<tr><td colspan="4" style="text-align:center;font-size:0.9rem;">Sin datos para el rango seleccionado.</td></tr>';
+        } else {
+          lowSalesBody.innerHTML = "";
+          lowSalesList.forEach((p, idx) => {
+            const tr = document.createElement("tr");
+
+            const tdRank = document.createElement("td");
+            tdRank.textContent = idx + 1;
+
+            const tdProd = document.createElement("td");
+            tdProd.textContent = p.producto || "";
+
+            const tdUni = document.createElement("td");
+            tdUni.textContent = p.total_unidades || 0;
+
+            const tdTotal = document.createElement("td");
+            tdTotal.textContent = formatMoney(p.total_monto);
+
+            tr.appendChild(tdRank);
+            tr.appendChild(tdProd);
+            tr.appendChild(tdUni);
+            tr.appendChild(tdTotal);
+            lowSalesBody.appendChild(tr);
+          });
+        }
+      }
+
+      // 5) Productos con poco / sin stock (inventario actual)
+      const noStockRes = await App.apiFetch(
+        "/api/reportes/inventario/sin-stock?min=5"
+      );
+      console.log("ReportsSales - sin stock:", noStockRes);
+
+      const noStockData = noStockRes.data?.data || noStockRes.data || {};
+      const noStockList = Array.isArray(noStockData.items)
+        ? noStockData.items
+        : [];
+
+      if (noStockBody) {
+        if (!noStockList.length) {
+          noStockBody.innerHTML =
+            '<tr><td colspan="3" style="text-align:center;font-size:0.9rem;">No se encontraron productos con stock bajo.</td></tr>';
+        } else {
+          noStockBody.innerHTML = "";
+          noStockList.forEach((row) => {
+            const tr = document.createElement("tr");
+
+            const tdSuc = document.createElement("td");
+            tdSuc.textContent = row.sucursal || "";
+
+            const tdProd = document.createElement("td");
+            tdProd.textContent = row.producto || "";
+
+            const tdCant = document.createElement("td");
+            tdCant.textContent = row.existencia || 0;
+
+            tr.appendChild(tdSuc);
+            tr.appendChild(tdProd);
+            tr.appendChild(tdCant);
+            noStockBody.appendChild(tr);
+          });
+        }
       }
     } catch (err) {
       console.error("Error cargando reportes de ventas:", err);
@@ -208,6 +293,14 @@
       if (topCantBody) {
         topCantBody.innerHTML =
           '<tr><td colspan="4" style="text-align:center;font-size:0.9rem;">Error al cargar el top por cantidad.</td></tr>';
+      }
+      if (lowSalesBody) {
+        lowSalesBody.innerHTML =
+          '<tr><td colspan="4" style="text-align:center;font-size:0.9rem;">Error al cargar los productos con menos ventas.</td></tr>';
+      }
+      if (noStockBody) {
+        noStockBody.innerHTML =
+          '<tr><td colspan="3" style="text-align:center;font-size:0.9rem;">Error al cargar productos sin stock.</td></tr>';
       }
     }
   }

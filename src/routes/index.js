@@ -6,6 +6,7 @@ const ProductController = require("../controllers/ProductController");
 const CatalogController = require("../controllers/CatalogController");
 const InvoiceController = require("../controllers/InvoiceController");
 const ClientController = require("../controllers/ClientController");
+const reportController = require("../controllers/reportController");
 const { authRequired, requireRole } = require("../middlewares/authMiddleware");
 const pool = require('../config/db'); // o '../config/db', lo que ya tengas
 const PDFDocument = require('pdfkit'); //para archivos pdf
@@ -1387,6 +1388,98 @@ router.get(
       });
     } catch (err) {
       console.error('Error reporte ventas/top-productos-cantidad:', err);
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+);
+
+
+// ==================== REPORTES ====================
+
+// Productos con menos ventas (por unidades) en un rango de fechas
+// Endpoint usado por el front: /api/reportes/ventas/productos-menor-venta
+// Productos que MENOS se venden (por cantidad)
+// GET /api/reportes/ventas/productos-menor-venta?from&to&limit=10
+router.get(
+  '/reportes/ventas/productos-menor-venta',
+  async (req, res) => {
+    const { from, to } = getDateRange(req.query);
+    const limit = Number(req.query.limit || 10) || 10;
+
+    try {
+      const [rows] = await pool.query(
+        `
+        SELECT
+          p.id,
+          p.nombre AS producto,
+          IFNULL(SUM(df.cantidad), 0) AS total_unidades,
+          IFNULL(SUM(df.subtotal), 0) AS total_monto
+        FROM factura f
+        INNER JOIN detalle_factura df ON df.factura_id = f.id
+        INNER JOIN producto p         ON p.id          = df.producto_id
+        WHERE f.estado = 'vigente'
+          AND DATE(f.fecha) BETWEEN ? AND ?
+        GROUP BY p.id, p.nombre
+        HAVING total_unidades > 0
+        ORDER BY total_unidades ASC, total_monto ASC
+        LIMIT ?
+        `,
+        [from, to, limit]
+      );
+
+      res.json({
+        ok: true,
+        data: {
+          from,
+          to,
+          limit,
+          productos: rows,
+        },
+      });
+    } catch (err) {
+      console.error('Error reporte ventas/productos-menor-venta:', err);
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+);
+
+
+// Productos con poco o sin stock (existencia < 5 por defecto) por sucursal
+// Endpoint usado por el front: /api/reportes/inventario/sin-stock
+// Productos con poco o sin stock (< min) por sucursal
+// GET /api/reportes/inventario/sin-stock?min=5
+router.get(
+  '/reportes/inventario/sin-stock',
+  async (req, res) => {
+    const min = Number(req.query.min || 5) || 5;
+
+    try {
+      const [rows] = await pool.query(
+        `
+        SELECT
+          s.id         AS sucursal_id,
+          s.nombre     AS sucursal,
+          p.id         AS producto_id,
+          p.nombre     AS producto,
+          i.existencia AS existencia
+        FROM inventario i
+        INNER JOIN sucursal s ON s.id = i.sucursal_id
+        INNER JOIN producto p ON p.id = i.producto_id
+        WHERE i.existencia < ?
+        ORDER BY i.existencia ASC, s.nombre, p.nombre
+        `,
+        [min]
+      );
+
+      res.json({
+        ok: true,
+        data: {
+          min,
+          items: rows,
+        },
+      });
+    } catch (err) {
+      console.error('Error reporte inventario/sin-stock:', err);
       res.status(500).json({ ok: false, error: err.message });
     }
   }
