@@ -251,6 +251,7 @@
     // Menú invitado
     hideElement("menu-home-guest");
     hideElement("menu-login-guest");
+    hideElement("menu-nearest-store-user");
 
     // Menú usuario base
     showElement("menu-logout-user");
@@ -286,7 +287,7 @@
         showElement("menu-dashboard-user");
         showElement("menu-products-user");
         showElement("menu-quotes-user"); // 👈 aquí seguro
-        
+        showElement("menu-nearest-store-user"); 
         break;
       default:
         break;
@@ -546,6 +547,16 @@
         }
         break;
 
+      case "#mi-tienda":
+        if (
+          window.NearestStore &&
+          typeof NearestStore.initNearestStoreView === "function"
+        ) {
+          loadView("nearest-store.html", NearestStore.initNearestStoreView);
+        } else {
+          loadView("nearest-store.html");
+        }
+        break;
 
 
       default:

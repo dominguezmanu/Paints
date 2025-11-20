@@ -1,0 +1,47 @@
+<section>
+  <h1 class="page-title">Mi tienda más cercana</h1>
+  <p class="page-subtitle">
+    Usamos la ubicación de tu dispositivo para encontrar la sucursal Paints más cercana.
+    Solo disponible para el rol <strong>Comprador</strong>.
+  </p>
+
+  <div class="card" style="max-width: 640px;">
+    <div
+      style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:1rem;
+      "
+    >
+      <div>
+        <p id="nearest-status" style="margin:0;font-size:0.9rem;color:#64748b;">
+          Pulsa en "Detectar ubicación" para iniciar.
+        </p>
+      </div>
+      <div>
+        <button
+          type="button"
+          id="nearest-refresh"
+          class="btn btn-primary"
+        >
+          Detectar ubicación
+        </button>
+      </div>
+    </div>
+
+    <hr style="margin:1rem 0; border:none; border-top:1px solid #e2e8f0;" />
+
+    <div id="nearest-result" style="font-size:0.95rem;">
+      <p><strong>Sucursal:</strong> —</p>
+      <p><strong>Dirección:</strong> —</p>
+      <p><strong>Distancia aproximada:</strong> —</p>
+    </div>
+
+    <p style="margin-top:1rem;font-size:0.8rem;color:#94a3b8;">
+      Nota: esta función requiere que el navegador permita acceso a tu ubicación
+      (HTTPS o <code>localhost</code>). Las coordenadas solo se usan para calcular la distancia,
+      no se almacenan.
+    </p>
+  </div>
+</section>

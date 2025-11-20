@@ -1630,5 +1630,111 @@ router.get('/clientes/:id/nearest-branch', async (req, res) => {
   }
 });
 
+// ===== Helpers GPS =====
+
+function parseGpsCoords(str) {
+  if (!str) return null;
+
+  const clean = String(str).trim().replace(/[()]/g, '');
+  let parts = clean.split(',');
+
+  if (parts.length !== 2) {
+    parts = clean.split(/\s+/);
+    if (parts.length !== 2) return null;
+  }
+
+  const lat = parseFloat(parts[0]);
+  const lng = parseFloat(parts[1]);
+
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+
+  return { lat, lng };
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371; // km
+  const toRad = (deg) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+// ======================================================
+//  SUCURSAL MÁS CERCANA A UNAS COORDENADAS (lat/lng)
+//  GET /api/sucursales/nearest?lat=14.84&lng=-91.52
+// ======================================================
+router.get('/sucursales/nearest', async (req, res) => {
+  const lat = parseFloat(req.query.lat);
+  const lng = parseFloat(req.query.lng);
+
+  if (Number.isNaN(lat) || Number.isNaN(lng)) {
+    return res.status(400).json({
+      ok: false,
+      message: 'Parámetros lat y lng inválidos',
+    });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `
+      SELECT id, nombre, direccion, ubicacionGPS
+      FROM sucursal
+      `
+    );
+
+    let best = null;
+
+    for (const s of rows) {
+      const coords = parseGpsCoords(s.ubicacionGPS);
+      if (!coords) continue; // sucursal sin GPS, la ignoramos
+
+      const distKm = haversineKm(lat, lng, coords.lat, coords.lng);
+
+      if (!best || distKm < best.distanceKm) {
+        best = {
+          id: s.id,
+          nombre: s.nombre,
+          direccion: s.direccion,
+          ubicacionGPS: s.ubicacionGPS,
+          distanceKm: distKm,
+        };
+      }
+    }
+
+    if (!best) {
+      return res.status(400).json({
+        ok: false,
+        message:
+          'No hay sucursales con ubicaciónGPS válida para calcular la más cercana',
+      });
+    }
+
+    return res.json({
+      ok: true,
+      data: {
+        userLocation: { lat, lng },
+        nearestBranch: best,
+      },
+    });
+  } catch (err) {
+    console.error('Error /sucursales/nearest:', err);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al calcular sucursal más cercana',
+    });
+  }
+});
+
 
 module.exports = router;
